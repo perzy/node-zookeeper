@@ -8,6 +8,7 @@ ZK_VERSION=3.4.6
 ZK=zookeeper-$ZK_VERSION
 ZK_FILE=/$BUILD_TMP/$ZK.tar.gz
 ZK_URL=http://apache.mirrors.tds.net/zookeeper/$ZK/$ZK.tar.gz
+ZK_FORKED_URL=https://s3.amazonaws.com/inindca-public/$ZK-yosemite.tar.gz
 APACHE_DYN_FILE=/$BUILD_TMP/index.html
 APACHE_DYN_URL=http://www.apache.org/dyn/closer.cgi/zookeeper/
 
@@ -39,6 +40,20 @@ download_source() {
     tar -ztf $ZK_FILE > /dev/null
 }
 
+download_forked_source() {
+	if [ ! -e "$ZK_FILE" ] ; then
+        echo "Downloading $ZK from $ZK_FORKED_URL"
+        curl --silent --output $ZK_FILE $ZK_FORKED_URL || wget $ZK_FORKED_URL -O $ZK_FILE
+        if [ $? != 0 ] ; then
+            echo "Unable to download zookeeper library"
+            return 1
+        fi
+    fi
+    
+    # Check that the file is not corrupted
+    tar -ztf $ZK_FILE > /dev/null
+	
+}
 if [ "$PLATFORM" != "SunOS" ]; then
     if [ -e "$BUILD/lib/libzookeeper_st.la" ]; then
         echo "ZooKeeper has already been built"
@@ -50,8 +65,9 @@ if [ "$PLATFORM" != "SunOS" ]; then
     RETRIES=5
     while [ $RETRIES -gt 0 ]
     do
-      download_source
-      if [ $? -eq 0 ]; then
+      #download_source
+  	  download_forked_source
+	  if [ $? -eq 0 ]; then
           break
       else
           # Delete the file so it will be re-downloaded
